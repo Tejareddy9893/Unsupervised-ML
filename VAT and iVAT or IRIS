@@ -1,0 +1,71 @@
+import pandas as pd
+import csv
+from sklearn import datasets
+import numpy as np
+from numpy import mean
+from numpy import cov
+from numpy.linalg import eig
+import matplotlib.pyplot as plt
+from PIL import Image
+from sklearn.preprocessing import normalize
+from sklearn.preprocessing import scale
+from sklearn.metrics import pairwise_distances
+
+# Extracting the images
+im_1= np.array(Image.open('Two_Separat_Clust.PGM'))
+im_2= np.array(Image.open('Five_Clust.PGM'))
+
+# Applying scaling to both images
+array_im_1 = scale(im_1)
+array_im_2 = scale(im_2)
+
+# Computing the ordered dissimilarity matrix for array_im_1
+
+dissimilarity_matrix_1 = pairwise_distances(array_im_1, metric='euclidean')
+ordered_indices_1 = np.array([0])
+for i in range(array_im_1.shape[0]-1):
+    distances = dissimilarity_matrix_1[ordered_indices_1, :]
+    next_index = np.argmax(np.min(distances, axis=0))
+    ordered_indices_1 = np.append(ordered_indices_1, next_index)
+
+# Computing the ordered dissimilarity matrix for array_im_2
+
+dissimilarity_matrix_2 = pairwise_distances(array_im_2, metric='euclidean')
+ordered_indices_2 = np.array([0])
+for i in range(array_im_2.shape[0]-1):        
+    distances = dissimilarity_matrix_2[ordered_indices_2, :]
+    next_index = np.argmax(np.min(distances, axis=0))
+    ordered_indices_2 = np.append(ordered_indices_2, next_index)
+
+# Creating the visual assessment tool (VAT) plots for both images
+ordered_dissimilarity_matrix_1 = dissimilarity_matrix_1[np.ix_(ordered_indices_1, ordered_indices_1)]
+ordered_dissimilarity_matrix_2 = dissimilarity_matrix_2[np.ix_(ordered_indices_2, ordered_indices_2)]
+
+fig,axs = plt.subplots(1, 2, figsize=(10, 5))
+axs[0].imshow(ordered_dissimilarity_matrix_1, cmap='gray', vmin=0, vmax=np.max(ordered_dissimilarity_matrix_1))
+axs[1].imshow(ordered_dissimilarity_matrix_2, cmap='gray', vmin=0, vmax=np.max(ordered_dissimilarity_matrix_2))
+
+# Creating the inverse visual assessment tool (iVAT) plots for both images
+def inverse_order(order):
+    n = len(order)
+    i_order = np.zeros(n)
+    for i, j in enumerate(order):
+        i_order[j] = i
+    return i_order
+
+i_order_1 = inverse_order(ordered_indices_1)
+i_order_2 = inverse_order(ordered_indices_2)
+
+ordered_dissimilarity_matrix_1_iVAT = np.zeros_like(ordered_dissimilarity_matrix_1)
+ordered_dissimilarity_matrix_2_iVAT = np.zeros_like(ordered_dissimilarity_matrix_2)
+
+for i in range(array_im_1.shape[0]):
+    for j in range(array_im_1.shape[0]):
+        ordered_dissimilarity_matrix_1_iVAT[i, j] = ordered_dissimilarity_matrix_1[int(i_order_1[i]), int(i_order_1[j])]
+        ordered_dissimilarity_matrix_2_iVAT[i, j] = ordered_dissimilarity_matrix_2[int(i_order_2[i]), int(i_order_2[j])]
+
+fig,axs = plt.subplots(1, 2, figsize=(10, 5))
+axs[0].imshow(ordered_dissimilarity_matrix_1_iVAT, cmap='gray', vmin=0, vmax=np.max(ordered_dissimilarity_matrix_1_iVAT))
+axs[1].imshow(ordered_dissimilarity_matrix_2_iVAT, cmap='gray', vmin=0, vmax=np.max(ordered_dissimilarity_matrix_2_iVAT))
+
+plt.show() # displaying the plots
